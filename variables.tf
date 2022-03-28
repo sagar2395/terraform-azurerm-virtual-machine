@@ -5,7 +5,7 @@ variable "existing_resource_group" {
 
 variable "resource_group_name" {
   description = "A container that holds related resources for an Azure solution"
-  default     = "example-vm"
+  default     = "example-rg"
 }
 
 variable "location" {
@@ -26,6 +26,11 @@ variable "virtual_network_name" {
 variable "address_space" {
   description = "Address Space for Virtual network. Defaults to 10.0.0.0/16"
   default     = ["10.0.0.0/16"]
+}
+
+variable "existing_subnet" {
+  description = "Is there an existing virtual network which should be used for keeping all the resources ? Defaults to false"
+  default = false
 }
 
 variable "subnet_name" {
@@ -129,7 +134,7 @@ variable "nsg_inbound_rules" {
 
 variable "virtual_machine_name" {
   description = "The name of the virtual machine."
-  default     = ""
+  default     = "example-vm"
 }
 
 variable "instances_count" {

@@ -13,6 +13,9 @@ locals {
 
   resource_group_name  = element(coalescelist(data.azurerm_resource_group.rg.*.name, azurerm_resource_group.rg.*.name, [""]), 0)
   virtual_network_name = element(coalescelist(data.azurerm_virtual_network.vnet.*.name, azurerm_virtual_network.vnet.*.name, [""]), 0)
+  subnet_name          = element(coalescelist(data.azurerm_subnet.snet.*.name, azurerm_subnet.snet.*.name, [""]), 0)
+  subnet_id            = element(coalescelist(data.azurerm_subnet.snet.*.id, azurerm_subnet.snet.*.id, [""]), 0)
+  subnet_address_prefixes = element(coalescelist(data.azurerm_subnet.snet.*.address_prefixes, azurerm_subnet.snet.*.address_prefixes, [""]), 0)
 }
 
 #---------------------------------------------------------------
@@ -54,9 +57,17 @@ resource "azurerm_virtual_network" "vnet" {
 }
 
 data "azurerm_subnet" "snet" {
+  count                = var.existing_subnet == true ? 1 : 0
   name                 = var.subnet_name
-  virtual_network_name = data.azurerm_virtual_network.vnet.name
+  virtual_network_name = local.virtual_network_name
   resource_group_name  = local.resource_group_name
+}
+
+resource "azurerm_subnet" "snet" {
+  count                = var.existing_subnet == false ? 1 : 0
+  name                 = var.subnet_name
+  resource_group_name  = local.resource_group_name
+  virtual_network_name = local.virtual_network_name
 }
 
 data "azurerm_storage_account" "storeacc" {
@@ -118,7 +129,7 @@ resource "azurerm_network_interface" "nic" {
   ip_configuration {
     name                          = lower("ipconig-${format("vm%s%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")), count.index + 1)}")
     primary                       = true
-    subnet_id                     = data.azurerm_subnet.snet.id
+    subnet_id                     = local.subnet_id
     private_ip_address_allocation = var.private_ip_address_allocation_type
     private_ip_address            = var.private_ip_address_allocation_type == "Static" ? element(concat(var.private_ip_address, [""]), count.index) : null
     public_ip_address_id          = var.enable_public_ip_address == true ? element(concat(azurerm_public_ip.pip.*.id, [""]), count.index) : null
@@ -196,7 +207,7 @@ resource "azurerm_network_security_rule" "nsg_rule" {
   source_port_range           = "*"
   destination_port_range      = each.value.security_rule.destination_port_range
   source_address_prefix       = each.value.security_rule.source_address_prefix
-  destination_address_prefix  = element(concat(data.azurerm_subnet.snet.address_prefixes, [""]), 0)
+  destination_address_prefix  = element(concat(local.subnet_address_prefixes, [""]), 0)
   description                 = "Inbound_Port_${each.value.security_rule.destination_port_range}"
   resource_group_name         = local.resource_group_name
   network_security_group_name = azurerm_network_security_group.nsg.0.name
