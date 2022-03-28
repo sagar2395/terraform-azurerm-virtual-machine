@@ -70,7 +70,7 @@ resource "azurerm_public_ip" "pip" {
   sku                 = var.public_ip_sku
   sku_tier            = var.public_ip_sku_tier
   domain_name_label   = var.domain_name_label
-  availability_zone   = var.public_ip_availability_zone
+  zones   = var.public_ip_availability_zone
   tags                = merge({ "ResourceName" = lower("pip-vm-${var.virtual_machine_name}-${data.azurerm_resource_group.rg.location}-0${count.index + 1}") }, var.tags, )
 
   lifecycle {
