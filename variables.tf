@@ -45,7 +45,7 @@ variable "domain_name_label" {
 
 variable "public_ip_availability_zone" {
   description = "The availability zone to allocate the Public IP in. Possible values are `Zone-Redundant`, `1`,`2`, `3`, and `No-Zone`"
-  default     = "Zone-Redundant"
+  default     = ["Zone-Redundant"]
 }
 
 variable "public_ip_sku_tier" {
