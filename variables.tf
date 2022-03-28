@@ -1,21 +1,41 @@
+variable "existing_resource_group" {
+  description = "Is there an existing resource group which should be used for keeping all the resources ? Defaults to false"
+  default     = false
+}
+
 variable "resource_group_name" {
   description = "A container that holds related resources for an Azure solution"
-  default     = ""
+  default     = "example-rg"
 }
 
 variable "location" {
   description = "The location/region to keep all your network resources. To get the list of all locations with table format from azure cli, run 'az account list-locations -o table'"
-  default     = ""
+  default     = "eastus"
+}
+
+variable "existing_virtual_network" {
+  description = "Is there an existing virtual network which should be used for keeping all the resources ? Defaults to false"
+  default     = false
 }
 
 variable "virtual_network_name" {
   description = "The name of the virtual network"
-  default     = ""
+  default     = "example-vnet"
+}
+
+variable "address_space" {
+  description = "Address Space for Virtual network. Defaults to 10.0.0.0/16"
+  default     = ["10.0.0.0/16"]
+}
+
+variable "existing_subnet" {
+  description = "Is there an existing virtual network which should be used for keeping all the resources ? Defaults to false"
+  default = false
 }
 
 variable "subnet_name" {
   description = "The name of the subnet to use in VM scale set"
-  default     = ""
+  default     = "example-subnet"
 }
 
 variable "random_password_length" {
@@ -114,7 +134,7 @@ variable "nsg_inbound_rules" {
 
 variable "virtual_machine_name" {
   description = "The name of the virtual machine."
-  default     = ""
+  default     = "example-vm"
 }
 
 variable "instances_count" {

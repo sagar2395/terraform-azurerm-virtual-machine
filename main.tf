@@ -10,6 +10,12 @@ locals {
     data_disk : data_disk,
     }
   }
+
+  resource_group_name  = element(coalescelist(data.azurerm_resource_group.rg.*.name, azurerm_resource_group.rg.*.name, [""]), 0)
+  virtual_network_name = element(coalescelist(data.azurerm_virtual_network.vnet.*.name, azurerm_virtual_network.vnet.*.name, [""]), 0)
+  subnet_name          = element(coalescelist(data.azurerm_subnet.snet.*.name, azurerm_subnet.snet.*.name, [""]), 0)
+  subnet_id            = element(coalescelist(data.azurerm_subnet.snet.*.id, azurerm_subnet.snet.*.id, [""]), 0)
+  subnet_address_prefixes = element(coalescelist(data.azurerm_subnet.snet.*.address_prefixes, azurerm_subnet.snet.*.address_prefixes, [""]), 0)
 }
 
 #---------------------------------------------------------------
@@ -25,24 +31,49 @@ resource "tls_private_key" "rsa" {
 # Resource Group, VNet, Subnet selection & Random Resources
 #----------------------------------------------------------
 data "azurerm_resource_group" "rg" {
-  name = var.resource_group_name
+  count = var.existing_resource_group == true ? 1 : 0
+  name  = var.resource_group_name
+}
+
+resource "azurerm_resource_group" "rg" {
+  count    = var.existing_resource_group == false ? 1 : 0
+  name     = var.resource_group_name
+  location = var.location
 }
 
 data "azurerm_virtual_network" "vnet" {
+  count               = var.existing_virtual_network == true ? 1 : 0
   name                = var.virtual_network_name
-  resource_group_name = data.azurerm_resource_group.rg.name
+  resource_group_name = local.resource_group_name
+}
+
+resource "azurerm_virtual_network" "vnet" {
+  count               = var.existing_virtual_network == false ? 1 : 0
+  name                = var.virtual_network_name
+  location            = var.location
+  resource_group_name = local.resource_group_name
+  address_space       = var.address_space
+  dns_servers         = var.dns_servers
 }
 
 data "azurerm_subnet" "snet" {
+  count                = var.existing_subnet == true ? 1 : 0
   name                 = var.subnet_name
-  virtual_network_name = data.azurerm_virtual_network.vnet.name
-  resource_group_name  = data.azurerm_resource_group.rg.name
+  virtual_network_name = local.virtual_network_name
+  resource_group_name  = local.resource_group_name
+}
+
+resource "azurerm_subnet" "snet" {
+  count                = var.existing_subnet == false ? 1 : 0
+  name                 = var.subnet_name
+  resource_group_name  = local.resource_group_name
+  virtual_network_name = local.virtual_network_name
 }
 
 data "azurerm_storage_account" "storeacc" {
   count               = var.storage_account_name != null ? 1 : 0
   name                = var.storage_account_name
-  resource_group_name = data.azurerm_resource_group.rg.name
+  resource_group_name = local.resource_group_name
 }
 
 resource "random_password" "passwd" {
@@ -63,15 +94,15 @@ resource "random_password" "passwd" {
 #-----------------------------------
 resource "azurerm_public_ip" "pip" {
   count               = var.enable_public_ip_address == true ? var.instances_count : 0
-  name                = lower("pip-vm-${var.virtual_machine_name}-${data.azurerm_resource_group.rg.location}-0${count.index + 1}")
-  location            = data.azurerm_resource_group.rg.location
-  resource_group_name = data.azurerm_resource_group.rg.name
+  name                = lower("pip-vm-${var.virtual_machine_name}-${var.location}-0${count.index + 1}")
+  location            = var.location
+  resource_group_name = local.resource_group_name
   allocation_method   = var.public_ip_allocation_method
   sku                 = var.public_ip_sku
   sku_tier            = var.public_ip_sku_tier
   domain_name_label   = var.domain_name_label
-  zones   = var.public_ip_availability_zone
-  tags                = merge({ "ResourceName" = lower("pip-vm-${var.virtual_machine_name}-${data.azurerm_resource_group.rg.location}-0${count.index + 1}") }, var.tags, )
+  zones               = var.public_ip_availability_zone
+  tags                = merge({ "ResourceName" = lower("pip-vm-${var.virtual_machine_name}-${var.location}-0${count.index + 1}") }, var.tags, )
 
   lifecycle {
     ignore_changes = [
@@ -87,8 +118,8 @@ resource "azurerm_public_ip" "pip" {
 resource "azurerm_network_interface" "nic" {
   count                         = var.instances_count
   name                          = var.instances_count == 1 ? lower("nic-${format("vm%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")))}") : lower("nic-${format("vm%s%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")), count.index + 1)}")
-  resource_group_name           = data.azurerm_resource_group.rg.name
-  location                      = data.azurerm_resource_group.rg.location
+  resource_group_name           = local.resource_group_name
+  location                      = var.location
   dns_servers                   = var.dns_servers
   enable_ip_forwarding          = var.enable_ip_forwarding
   enable_accelerated_networking = var.enable_accelerated_networking
@@ -98,7 +129,7 @@ resource "azurerm_network_interface" "nic" {
   ip_configuration {
     name                          = lower("ipconig-${format("vm%s%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")), count.index + 1)}")
     primary                       = true
-    subnet_id                     = data.azurerm_subnet.snet.id
+    subnet_id                     = local.subnet_id
     private_ip_address_allocation = var.private_ip_address_allocation_type
     private_ip_address            = var.private_ip_address_allocation_type == "Static" ? element(concat(var.private_ip_address, [""]), count.index) : null
     public_ip_address_id          = var.enable_public_ip_address == true ? element(concat(azurerm_public_ip.pip.*.id, [""]), count.index) : null
@@ -116,10 +147,10 @@ resource "azurerm_network_interface" "nic" {
 #----------------------------------------------------------------------------------------------------
 resource "azurerm_proximity_placement_group" "appgrp" {
   count               = var.enable_proximity_placement_group ? 1 : 0
-  name                = lower("proxigrp-${var.virtual_machine_name}-${data.azurerm_resource_group.rg.location}")
-  resource_group_name = data.azurerm_resource_group.rg.name
-  location            = data.azurerm_resource_group.rg.location
-  tags                = merge({ "ResourceName" = lower("proxigrp-${var.virtual_machine_name}-${data.azurerm_resource_group.rg.location}") }, var.tags, )
+  name                = lower("proxigrp-${var.virtual_machine_name}-${var.location}")
+  resource_group_name = local.resource_group_name
+  location            = var.location
+  tags                = merge({ "ResourceName" = lower("proxigrp-${var.virtual_machine_name}-${var.location}") }, var.tags, )
 
   lifecycle {
     ignore_changes = [
@@ -133,14 +164,14 @@ resource "azurerm_proximity_placement_group" "appgrp" {
 #-----------------------------------------------------
 resource "azurerm_availability_set" "aset" {
   count                        = var.enable_vm_availability_set ? 1 : 0
-  name                         = lower("avail-${var.virtual_machine_name}-${data.azurerm_resource_group.rg.location}")
-  resource_group_name          = data.azurerm_resource_group.rg.name
-  location                     = data.azurerm_resource_group.rg.location
+  name                         = lower("avail-${var.virtual_machine_name}-${var.location}")
+  resource_group_name          = local.resource_group_name
+  location                     = var.location
   platform_fault_domain_count  = var.platform_fault_domain_count
   platform_update_domain_count = var.platform_update_domain_count
   proximity_placement_group_id = var.enable_proximity_placement_group ? azurerm_proximity_placement_group.appgrp.0.id : null
   managed                      = true
-  tags                         = merge({ "ResourceName" = lower("avail-${var.virtual_machine_name}-${data.azurerm_resource_group.rg.location}") }, var.tags, )
+  tags                         = merge({ "ResourceName" = lower("avail-${var.virtual_machine_name}-${var.location}") }, var.tags, )
 
   lifecycle {
     ignore_changes = [
@@ -154,10 +185,10 @@ resource "azurerm_availability_set" "aset" {
 #---------------------------------------------------------------
 resource "azurerm_network_security_group" "nsg" {
   count               = var.existing_network_security_group_id == null ? 1 : 0
-  name                = lower("nsg_${var.virtual_machine_name}_${data.azurerm_resource_group.rg.location}_in")
-  resource_group_name = data.azurerm_resource_group.rg.name
-  location            = data.azurerm_resource_group.rg.location
-  tags                = merge({ "ResourceName" = lower("nsg_${var.virtual_machine_name}_${data.azurerm_resource_group.rg.location}_in") }, var.tags, )
+  name                = lower("nsg_${var.virtual_machine_name}_${var.location}_in")
+  resource_group_name = local.resource_group_name
+  location            = var.location
+  tags                = merge({ "ResourceName" = lower("nsg_${var.virtual_machine_name}_${var.location}_in") }, var.tags, )
 
   lifecycle {
     ignore_changes = [
@@ -176,9 +207,9 @@ resource "azurerm_network_security_rule" "nsg_rule" {
   source_port_range           = "*"
   destination_port_range      = each.value.security_rule.destination_port_range
   source_address_prefix       = each.value.security_rule.source_address_prefix
-  destination_address_prefix  = element(concat(data.azurerm_subnet.snet.address_prefixes, [""]), 0)
+  destination_address_prefix  = element(concat(local.subnet_address_prefixes, [""]), 0)
   description                 = "Inbound_Port_${each.value.security_rule.destination_port_range}"
-  resource_group_name         = data.azurerm_resource_group.rg.name
+  resource_group_name         = local.resource_group_name
   network_security_group_name = azurerm_network_security_group.nsg.0.name
   depends_on                  = [azurerm_network_security_group.nsg]
 }
@@ -195,8 +226,8 @@ resource "azurerm_network_interface_security_group_association" "nsgassoc" {
 resource "azurerm_linux_virtual_machine" "linux_vm" {
   count                           = var.os_flavor == "linux" ? var.instances_count : 0
   name                            = var.instances_count == 1 ? substr(var.virtual_machine_name, 0, 64) : substr(format("%s%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")), count.index + 1), 0, 64)
-  resource_group_name             = data.azurerm_resource_group.rg.name
-  location                        = data.azurerm_resource_group.rg.location
+  resource_group_name             = local.resource_group_name
+  location                        = var.location
   size                            = var.virtual_machine_size
   admin_username                  = var.admin_username
   admin_password                  = var.disable_password_authentication == false && var.admin_password == null ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
@@ -273,8 +304,8 @@ resource "azurerm_windows_virtual_machine" "win_vm" {
   count                        = var.os_flavor == "windows" ? var.instances_count : 0
   name                         = var.instances_count == 1 ? substr(var.virtual_machine_name, 0, 15) : substr(format("%s%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")), count.index + 1), 0, 15)
   computer_name                = var.instances_count == 1 ? substr(var.virtual_machine_name, 0, 15) : substr(format("%s%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")), count.index + 1), 0, 15)
-  resource_group_name          = data.azurerm_resource_group.rg.name
-  location                     = data.azurerm_resource_group.rg.location
+  resource_group_name          = local.resource_group_name
+  location                     = var.location
   size                         = var.virtual_machine_size
   admin_username               = var.admin_username
   admin_password               = var.admin_password == null ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
@@ -362,8 +393,8 @@ resource "azurerm_windows_virtual_machine" "win_vm" {
 resource "azurerm_managed_disk" "data_disk" {
   for_each             = local.vm_data_disks
   name                 = "${var.virtual_machine_name}_DataDisk_${each.value.idx}"
-  resource_group_name  = data.azurerm_resource_group.rg.name
-  location             = data.azurerm_resource_group.rg.location
+  resource_group_name  = local.resource_group_name
+  location             = var.location
   storage_account_type = lookup(each.value.data_disk, "storage_account_type", "StandardSSD_LRS")
   create_option        = "Empty"
   disk_size_gb         = each.value.data_disk.disk_size_gb
