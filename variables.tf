@@ -194,7 +194,7 @@ variable "enable_encryption_at_host" {
 
 variable "vm_availability_zone" {
   description = "The Zone in which this Virtual Machine should be created. Conflicts with availability set and shouldn't use both"
-  default     = null
+  default     = ""
 }
 
 variable "patch_mode" {
@@ -209,7 +209,7 @@ variable "license_type" {
 
 variable "vm_time_zone" {
   description = "Specifies the Time Zone which should be used by the Virtual Machine"
-  default     = null
+  default     = ""
 }
 
 variable "generate_admin_ssh_key" {
@@ -219,7 +219,7 @@ variable "generate_admin_ssh_key" {
 
 variable "admin_ssh_key_data" {
   description = "specify the path to the existing SSH key to authenticate Linux virtual machine"
-  default     = null
+  default     = ""
 }
 
 variable "custom_image" {
@@ -655,8 +655,8 @@ variable "windows_distribution_list" {
 }
 
 variable "windows_distribution_name" {
-  default     = "windows2019dc"
   description = "Variable to pick an OS flavour for Windows based VM. Possible values include: winserver, wincore, winsql"
+  default     = "windows2019dc"
 }
 
 variable "os_disk_storage_account_type" {
@@ -671,12 +671,12 @@ variable "os_disk_caching" {
 
 variable "disk_encryption_set_id" {
   description = "The ID of the Disk Encryption Set which should be used to Encrypt this OS Disk. The Disk Encryption Set must have the `Reader` Role Assignment scoped on the Key Vault - in addition to an Access Policy to the Key Vault"
-  default     = null
+  default     = ""
 }
 
 variable "disk_size_gb" {
   description = "The Size of the Internal OS Disk in GB, if you wish to vary from the size used in the image this Virtual Machine is sourced from."
-  default     = null
+  default     = -1
 }
 
 variable "enable_os_disk_write_accelerator" {
@@ -686,7 +686,7 @@ variable "enable_os_disk_write_accelerator" {
 
 variable "os_disk_name" {
   description = "The name which should be used for the Internal OS Disk"
-  default     = null
+  default     = ""
 }
 
 variable "enable_ultra_ssd_data_disk_storage_support" {
@@ -696,22 +696,22 @@ variable "enable_ultra_ssd_data_disk_storage_support" {
 
 variable "managed_identity_type" {
   description = "The type of Managed Identity which should be assigned to the Linux Virtual Machine. Possible values are `SystemAssigned`, `UserAssigned` and `SystemAssigned, UserAssigned`"
-  default     = null
+  default     = ""
 }
 
 variable "managed_identity_ids" {
   description = "A list of User Managed Identity ID's which should be assigned to the Linux Virtual Machine."
-  default     = null
+  default     = []
 }
 
 variable "winrm_protocol" {
   description = "Specifies the protocol of winrm listener. Possible values are `Http` or `Https`"
-  default     = null
+  default     = ""
 }
 
 variable "key_vault_certificate_secret_url" {
   description = "The Secret URL of a Key Vault Certificate, which must be specified when `protocol` is set to `Https`"
-  default     = null
+  default     = ""
 }
 
 variable "additional_unattend_content" {
@@ -721,7 +721,7 @@ variable "additional_unattend_content" {
 
 variable "additional_unattend_content_setting" {
   description = "The name of the setting to which the content applies. Possible values are `AutoLogon` and `FirstLogonCommands`"
-  default     = null
+  default     = ""
 }
 
 variable "enable_boot_diagnostics" {
@@ -731,7 +731,7 @@ variable "enable_boot_diagnostics" {
 
 variable "storage_account_uri" {
   description = "The Primary/Secondary Endpoint for the Azure Storage Account which should be used to store Boot Diagnostics, including Console Output and Screenshots from the Hypervisor. Passing a `null` value will utilize a Managed Storage Account to store Boot Diagnostics."
-  default     = null
+  default     = ""
 }
 
 variable "data_disks" {
@@ -751,22 +751,22 @@ variable "nsg_diag_logs" {
 
 variable "log_analytics_workspace_id" {
   description = "The name of log analytics workspace resource id"
-  default     = null
+  default     = ""
 }
 
 variable "log_analytics_customer_id" {
   description = "The Workspace (or Customer) ID for the Log Analytics Workspace."
-  default     = null
+  default     = ""
 }
 
 variable "log_analytics_workspace_primary_shared_key" {
   description = "The Primary shared key for the Log Analytics Workspace"
-  default     = null
+  default     = ""
 }
 
 variable "storage_account_name" {
   description = "The name of the hub storage account to store logs"
-  default     = null
+  default     = ""
 }
 
 variable "deploy_log_analytics_agent" {
