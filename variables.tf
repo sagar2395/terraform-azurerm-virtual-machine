@@ -45,7 +45,7 @@ variable "random_password_length" {
 
 variable "enable_public_ip_address" {
   description = "Reference to a Public IP Address to associate with the NIC"
-  default     = null
+  default     = true
 }
 
 variable "public_ip_allocation_method" {
@@ -60,7 +60,7 @@ variable "public_ip_sku" {
 
 variable "domain_name_label" {
   description = "Label for the Domain Name. Will be used to make up the FQDN. If a domain name label is specified, an A DNS record is created for the public IP in the Microsoft Azure DNS system."
-  default     = null
+  default     = ""
 }
 
 variable "public_ip_availability_zone" {
@@ -90,7 +90,7 @@ variable "enable_accelerated_networking" {
 
 variable "internal_dns_name_label" {
   description = "The (relative) DNS Name used for internal communications between Virtual Machines in the same Virtual Network."
-  default     = null
+  default     = ""
 }
 
 variable "private_ip_address_allocation_type" {
@@ -169,17 +169,17 @@ variable "admin_password" {
 
 variable "source_image_id" {
   description = "The ID of an Image which each Virtual Machine should be based on"
-  default     = null
+  default     = ""
 }
 
 variable "dedicated_host_id" {
   description = "The ID of a Dedicated Host where this machine should be run on."
-  default     = null
+  default     = ""
 }
 
 variable "custom_data" {
   description = "Base64 encoded file of a bash script that gets run once by cloud-init upon VM creation"
-  default     = null
+  default     = ""
 }
 
 variable "enable_automatic_updates" {

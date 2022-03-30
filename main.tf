@@ -100,7 +100,7 @@ resource "azurerm_public_ip" "pip" {
   allocation_method   = var.public_ip_allocation_method
   sku                 = var.public_ip_sku
   sku_tier            = var.public_ip_sku_tier
-  domain_name_label   = var.domain_name_label
+  domain_name_label   = var.domain_name_label == "" ? null : var.domain_name_label
   zones               = var.public_ip_availability_zone
   tags                = merge({ "ResourceName" = lower("pip-vm-${var.virtual_machine_name}-${var.location}-0${count.index + 1}") }, var.tags, )
 
@@ -123,7 +123,7 @@ resource "azurerm_network_interface" "nic" {
   dns_servers                   = var.dns_servers
   enable_ip_forwarding          = var.enable_ip_forwarding
   enable_accelerated_networking = var.enable_accelerated_networking
-  internal_dns_name_label       = var.internal_dns_name_label
+  internal_dns_name_label       = var.internal_dns_name_label == "" ? null : var.internal_dns_name_label
   tags                          = merge({ "ResourceName" = var.instances_count == 1 ? lower("nic-${format("vm%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")))}") : lower("nic-${format("vm%s%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")), count.index + 1)}") }, var.tags, )
 
   ip_configuration {
@@ -233,11 +233,11 @@ resource "azurerm_linux_virtual_machine" "linux_vm" {
   admin_password                  = var.disable_password_authentication == false && var.admin_password == null ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
   disable_password_authentication = var.disable_password_authentication
   network_interface_ids           = [element(concat(azurerm_network_interface.nic.*.id, [""]), count.index)]
-  source_image_id                 = var.source_image_id != null ? var.source_image_id : null
+  source_image_id                 = var.source_image_id != "" ? var.source_image_id : null
   provision_vm_agent              = true
   allow_extension_operations      = true
-  dedicated_host_id               = var.dedicated_host_id
-  custom_data                     = var.custom_data != null ? var.custom_data : null
+  dedicated_host_id               = var.dedicated_host_id != "" ? var.dedicated_host_id : null 
+  custom_data                     = var.custom_data != "" ? var.custom_data : null
   availability_set_id             = var.enable_vm_availability_set == true ? element(concat(azurerm_availability_set.aset.*.id, [""]), 0) : null
   encryption_at_host_enabled      = var.enable_encryption_at_host
   proximity_placement_group_id    = var.enable_proximity_placement_group ? azurerm_proximity_placement_group.appgrp.0.id : null
@@ -253,7 +253,7 @@ resource "azurerm_linux_virtual_machine" "linux_vm" {
   }
 
   dynamic "source_image_reference" {
-    for_each = var.source_image_id != null ? [] : [1]
+    for_each = var.source_image_id != "" ? [] : [1]
     content {
       publisher = var.custom_image != null ? var.custom_image["publisher"] : var.linux_distribution_list[lower(var.linux_distribution_name)]["publisher"]
       offer     = var.custom_image != null ? var.custom_image["offer"] : var.linux_distribution_list[lower(var.linux_distribution_name)]["offer"]
@@ -310,11 +310,11 @@ resource "azurerm_windows_virtual_machine" "win_vm" {
   admin_username               = var.admin_username
   admin_password               = var.admin_password == null ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
   network_interface_ids        = [element(concat(azurerm_network_interface.nic.*.id, [""]), count.index)]
-  source_image_id              = var.source_image_id != null ? var.source_image_id : null
+  source_image_id              = var.source_image_id != "" ? var.source_image_id : null
   provision_vm_agent           = true
   allow_extension_operations   = true
-  dedicated_host_id            = var.dedicated_host_id
-  custom_data                  = var.custom_data != null ? var.custom_data : null
+  dedicated_host_id            = var.dedicated_host_id != "" ? var.dedicated_host_id : null
+  custom_data                  = var.custom_data != "" ? var.custom_data : null
   enable_automatic_updates     = var.enable_automatic_updates
   license_type                 = var.license_type
   availability_set_id          = var.enable_vm_availability_set == true ? element(concat(azurerm_availability_set.aset.*.id, [""]), 0) : null
@@ -326,7 +326,7 @@ resource "azurerm_windows_virtual_machine" "win_vm" {
   tags                         = merge({ "ResourceName" = var.instances_count == 1 ? var.virtual_machine_name : format("%s%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")), count.index + 1) }, var.tags, )
 
   dynamic "source_image_reference" {
-    for_each = var.source_image_id != null ? [] : [1]
+    for_each = var.source_image_id != "" ? [] : [1]
     content {
       publisher = var.custom_image != null ? var.custom_image["publisher"] : var.windows_distribution_list[lower(var.windows_distribution_name)]["publisher"]
       offer     = var.custom_image != null ? var.custom_image["offer"] : var.windows_distribution_list[lower(var.windows_distribution_name)]["offer"]
