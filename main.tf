@@ -77,7 +77,7 @@ data "azurerm_storage_account" "storeacc" {
 }
 
 resource "random_password" "passwd" {
-  count       = (var.os_flavor == "linux" && var.disable_password_authentication == false && var.admin_password == null ? 1 : (var.os_flavor == "windows" && var.admin_password == null ? 1 : 0))
+  count       = (var.os_flavor == "linux" && var.disable_password_authentication == false && var.admin_password == "" ? 1 : (var.os_flavor == "windows" && var.admin_password == "" ? 1 : 0))
   length      = var.random_password_length
   min_upper   = 4
   min_lower   = 2
@@ -131,7 +131,7 @@ resource "azurerm_network_interface" "nic" {
     primary                       = true
     subnet_id                     = local.subnet_id
     private_ip_address_allocation = var.private_ip_address_allocation_type
-    private_ip_address            = var.private_ip_address_allocation_type == "Static" ? element(concat(var.private_ip_address, [""]), count.index) : null
+    private_ip_address            = var.private_ip_address_allocation_type == "Static" ? element(concat(var.private_ip_address != "" ? var.private_ip_address : null, [""]), count.index) : null
     public_ip_address_id          = var.enable_public_ip_address == true ? element(concat(azurerm_public_ip.pip.*.id, [""]), count.index) : null
   }
 
@@ -184,7 +184,7 @@ resource "azurerm_availability_set" "aset" {
 # Network security group for Virtual Machine Network Interface
 #---------------------------------------------------------------
 resource "azurerm_network_security_group" "nsg" {
-  count               = var.existing_network_security_group_id == null ? 1 : 0
+  count               = var.existing_network_security_group_id == "" ? 1 : 0
   name                = lower("nsg_${var.virtual_machine_name}_${var.location}_in")
   resource_group_name = local.resource_group_name
   location            = var.location
@@ -217,7 +217,7 @@ resource "azurerm_network_security_rule" "nsg_rule" {
 resource "azurerm_network_interface_security_group_association" "nsgassoc" {
   count                     = var.instances_count
   network_interface_id      = element(concat(azurerm_network_interface.nic.*.id, [""]), count.index)
-  network_security_group_id = var.existing_network_security_group_id == null ? azurerm_network_security_group.nsg.0.id : var.existing_network_security_group_id
+  network_security_group_id = var.existing_network_security_group_id == "" ? azurerm_network_security_group.nsg.0.id : var.existing_network_security_group_id
 }
 
 #---------------------------------------
@@ -230,7 +230,7 @@ resource "azurerm_linux_virtual_machine" "linux_vm" {
   location                        = var.location
   size                            = var.virtual_machine_size
   admin_username                  = var.admin_username
-  admin_password                  = var.disable_password_authentication == false && var.admin_password == null ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
+  admin_password                  = var.disable_password_authentication == false && var.admin_password == "" ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
   disable_password_authentication = var.disable_password_authentication
   network_interface_ids           = [element(concat(azurerm_network_interface.nic.*.id, [""]), count.index)]
   source_image_id                 = var.source_image_id != "" ? var.source_image_id : null
@@ -255,10 +255,10 @@ resource "azurerm_linux_virtual_machine" "linux_vm" {
   dynamic "source_image_reference" {
     for_each = var.source_image_id != "" ? [] : [1]
     content {
-      publisher = var.custom_image != null ? var.custom_image["publisher"] : var.linux_distribution_list[lower(var.linux_distribution_name)]["publisher"]
-      offer     = var.custom_image != null ? var.custom_image["offer"] : var.linux_distribution_list[lower(var.linux_distribution_name)]["offer"]
-      sku       = var.custom_image != null ? var.custom_image["sku"] : var.linux_distribution_list[lower(var.linux_distribution_name)]["sku"]
-      version   = var.custom_image != null ? var.custom_image["version"] : var.linux_distribution_list[lower(var.linux_distribution_name)]["version"]
+      publisher = var.custom_image["publisher"] != "" ? var.custom_image["publisher"] : var.linux_distribution_list[lower(var.linux_distribution_name)]["publisher"]
+      offer     = var.custom_image["offer"] != "" ? var.custom_image["offer"] : var.linux_distribution_list[lower(var.linux_distribution_name)]["offer"]
+      sku       = var.custom_image["sku"] != "" ? var.custom_image["sku"] : var.linux_distribution_list[lower(var.linux_distribution_name)]["sku"]
+      version   = var.custom_image["version"] != "" ? var.custom_image["version"] : var.linux_distribution_list[lower(var.linux_distribution_name)]["version"]
     }
   }
 
@@ -308,7 +308,7 @@ resource "azurerm_windows_virtual_machine" "win_vm" {
   location                     = var.location
   size                         = var.virtual_machine_size
   admin_username               = var.admin_username
-  admin_password               = var.admin_password == null ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
+  admin_password               = var.admin_password == "" ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
   network_interface_ids        = [element(concat(azurerm_network_interface.nic.*.id, [""]), count.index)]
   source_image_id              = var.source_image_id != "" ? var.source_image_id : null
   provision_vm_agent           = true
@@ -328,10 +328,10 @@ resource "azurerm_windows_virtual_machine" "win_vm" {
   dynamic "source_image_reference" {
     for_each = var.source_image_id != "" ? [] : [1]
     content {
-      publisher = var.custom_image != null ? var.custom_image["publisher"] : var.windows_distribution_list[lower(var.windows_distribution_name)]["publisher"]
-      offer     = var.custom_image != null ? var.custom_image["offer"] : var.windows_distribution_list[lower(var.windows_distribution_name)]["offer"]
-      sku       = var.custom_image != null ? var.custom_image["sku"] : var.windows_distribution_list[lower(var.windows_distribution_name)]["sku"]
-      version   = var.custom_image != null ? var.custom_image["version"] : var.windows_distribution_list[lower(var.windows_distribution_name)]["version"]
+      publisher = var.custom_image["publisher"] != "" ? var.custom_image["publisher"] : var.windows_distribution_list[lower(var.windows_distribution_name)]["publisher"]
+      offer     = var.custom_image["offer"] != "" ? var.custom_image["offer"] : var.windows_distribution_list[lower(var.windows_distribution_name)]["offer"]
+      sku       = var.custom_image["sku"] != "" ? var.custom_image["sku"] : var.windows_distribution_list[lower(var.windows_distribution_name)]["sku"]
+      version   = var.custom_image["version"] != "" ? var.custom_image["version"] : var.windows_distribution_list[lower(var.windows_distribution_name)]["version"]
     }
   }
 
@@ -471,7 +471,7 @@ resource "azurerm_virtual_machine_extension" "omsagentlinux" {
 # azurerm monitoring diagnostics 
 #--------------------------------------
 resource "azurerm_monitor_diagnostic_setting" "nsg" {
-  count                      = var.existing_network_security_group_id == null && var.log_analytics_workspace_id != "" ? 1 : 0
+  count                      = var.existing_network_security_group_id == "" && var.log_analytics_workspace_id != "" ? 1 : 0
   name                       = lower("nsg-${var.virtual_machine_name}-diag")
   target_resource_id         = azurerm_network_security_group.nsg.0.id
   storage_account_id         = var.storage_account_name != "" ? data.azurerm_storage_account.storeacc.0.id : null

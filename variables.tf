@@ -100,7 +100,7 @@ variable "private_ip_address_allocation_type" {
 
 variable "private_ip_address" {
   description = "The Static IP Address which should be used. This is valid only when `private_ip_address_allocation` is set to `Static` "
-  default     = null
+  default     = ""
 }
 
 variable "enable_vm_availability_set" {
@@ -124,7 +124,7 @@ variable "enable_proximity_placement_group" {
 
 variable "existing_network_security_group_id" {
   description = "The resource id of existing network security group"
-  default     = null
+  default     = ""
 }
 
 variable "nsg_inbound_rules" {
@@ -164,7 +164,7 @@ variable "admin_username" {
 
 variable "admin_password" {
   description = "The Password which should be used for the local-administrator on this Virtual Machine"
-  default     = null
+  default     = ""
 }
 
 variable "source_image_id" {
@@ -224,13 +224,18 @@ variable "admin_ssh_key_data" {
 
 variable "custom_image" {
   description = "Provide the custom image to this module if the default variants are not sufficient"
-  type = map(object({
+  type = object({
     publisher = string
     offer     = string
     sku       = string
     version   = string
-  }))
-  default = null
+  })
+  default = {
+    publisher = ""
+    offer     = ""
+    sku       = ""
+    version   = ""
+  }
 }
 
 variable "linux_distribution_list" {
