@@ -365,7 +365,7 @@ resource "azurerm_windows_virtual_machine" "win_vm" {
   }
 
   dynamic "additional_unattend_content" {
-    for_each = var.additional_unattend_content != null ? [1] : []
+    for_each = var.additional_unattend_content != "" ? [1] : []
     content {
       content = var.additional_unattend_content
       setting = var.additional_unattend_content_setting

@@ -716,7 +716,7 @@ variable "key_vault_certificate_secret_url" {
 
 variable "additional_unattend_content" {
   description = "The XML formatted content that is added to the unattend.xml file for the specified path and component."
-  default     = null
+  default     = ""
 }
 
 variable "additional_unattend_content_setting" {
