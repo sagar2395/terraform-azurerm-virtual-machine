@@ -12,13 +12,13 @@ output "admin_ssh_key_private" {
 output "windows_vm_password" {
   description = "Password for the windows VM"
   sensitive   = true
-  value       = var.admin_password == null ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
+  value       = var.admin_password == "" ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
 }
 
 output "linux_vm_password" {
   description = "Password for the Linux VM"
   sensitive   = true
-  value       = var.disable_password_authentication == false && var.admin_password == null ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
+  value       = var.disable_password_authentication == false && var.admin_password == "" ? element(concat(random_password.passwd.*.result, [""]), 0) : var.admin_password
 }
 
 output "windows_vm_public_ips" {
