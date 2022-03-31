@@ -2,6 +2,8 @@
 
 Terraform module to deploy azure Windows or Linux virtual machines with Public IP, proximity placement group, Availability Set, boot diagnostics, data disks, and Network Security Group support. It supports existing ssh keys or generates ssh key pairs if required for Linux VM's. It creates random passwords as well if you are not providing the custom password for Windows VM's.
 
+You don't need any inputs to test this module. You can test this module without any parameters and a basic module will be deployed with default values. You can add inputs as per your requirements.
+
 This module supports to use existing NSG group. To enable this feature, specify the argument `existing_network_security_group_id` with a valid resource id of the current NSG group and remove all NSG inbound rules from the module.
 
 ## Resources Supported
@@ -37,8 +39,8 @@ data "azurerm_log_analytics_workspace" "example" {
 }
 
 module "virtual-machine" {
-  source  = "kumarvna/virtual-machine/azurerm"
-  version = "2.3.0"
+  source  = "sagar2395/virtual-machine/azurerm"
+  version = "2.4.5"
 
   # Resource Group, location, VNet and Subnet details
   resource_group_name  = "rg-shared-westeurope-01"
@@ -268,8 +270,8 @@ resource "azurerm_user_assigned_identity" "example" {
 }
 
 module "virtual-machine" {
-  source  = "kumarvna/virtual-machine/azurerm"
-  version = "2.3.0"
+  source  = "sagar2395/virtual-machine/azurerm"
+  version = "2.4.5"
 
   # .... omitted for bravity
   
@@ -309,8 +311,8 @@ In the Source and Destination columns, `VirtualNetwork`, `AzureLoadBalancer`, an
 
 ```terraform
 module "virtual-machine" {
-  source  = "kumarvna/virtual-machine/azurerm"
-  version = "2.3.0"
+  source  = "sagar2395/virtual-machine/azurerm"
+  version = "2.4.5"
 
 # .... omitted for bravity
   
@@ -493,6 +495,11 @@ Name | Description | Type | Default
 ## Authors
 
 Originally created by [Kumaraswamy Vithanala](mailto:kumarvna@gmail.com).
+Module updated by [Sagar Chhabra](mailto:sagar.chhabra02@gmail.com) 
+
+## My personal website
+
+[Sip your Coffee](https://www.sipyourcoffee.net)
 
 ## Other resources
 
